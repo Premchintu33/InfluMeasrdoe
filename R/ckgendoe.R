@@ -1,3 +1,16 @@
+#' To Identify Outliers in Design of Experiments
+#'
+#' @param trt Numeric or complex vector containing the treatment levels
+#' @param Rep Numeric or complex vector containing the Replication
+#' @param resp Numeric or complex vector containing response variable
+#' @param noutli a number indicating the number of outliers
+#'
+#' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
+#' Residuals of the of the model and Cook's distance for each treatment or a
+#' combination of treatments
+#'
+#'
+#' @examples
 ckgdoe <- function(trt,Rep,resp,noutli){
   argmts <- lapply(as.list(match.call())[-1], eval)
   missing_vals <- sapply(argmts, function(x) any(is.na(x)))
@@ -120,6 +133,15 @@ ckgdoe <- function(trt,Rep,resp,noutli){
 
   ## to mark values with threshold values
   ## function to mark
+#' Title
+#'
+#' @param mat
+#' @param threshold
+#'
+#' @return
+#' @export
+#'
+#' @examples
   mark_values_with_asterisk <- function(mat, threshold) {
     # Convert to data frame if not already
     if (!is.data.frame(mat)) {

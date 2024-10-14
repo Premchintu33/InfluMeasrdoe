@@ -21,11 +21,8 @@ ckgdoe(trt, Rep, resp, noutli)
 The output contains Shapiro-Wilk Normality test and Bartlett test for
 Residuals of the of the model and Cook's distance for each treatment or a
 combination of treatments
+Title
 }
 \description{
 To Identify Outliers in Design of Experiments
-}
-\examples{
-Title
-
 }

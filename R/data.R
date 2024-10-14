@@ -16,5 +16,3 @@
 #' @examples
 #' data(ex1)
 "ex1"
-
-

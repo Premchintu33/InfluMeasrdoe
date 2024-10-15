@@ -5,8 +5,7 @@
 #' @param resp Numeric or complex vector containing response variable
 #' @param noutli a number indicating the number of outliers
 #'
-#' @importFrom("stats","IQR","acf","cov","lm","model.matrix","pchisq","sd","shapiro.test","var","xtabs")
-#' @importFrom("utils","combn")
+#' @import ExpDes, Matrix, pracma, tensr, stats, utils
 #'
 #' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
 #' Residuals of the of the model and Cook's distance for each treatment or a
@@ -14,7 +13,7 @@
 #'
 #'  @examples
 #'  data(ex1)
-#'  To identify single outlier in block designs
+#'  attach(ex1)
 #'  ckgendoe(ex1$trt,ex1$rep,ex1$yld,1)
 #'
 #'  @export

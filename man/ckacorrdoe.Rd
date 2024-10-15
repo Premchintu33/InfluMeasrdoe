@@ -25,7 +25,7 @@ To Identify Outliers in Design of Experiments with Autocorrelated Errors
 }
 \examples{
 data(ex3)
-To identify single outlier in design of experiments with autocorrelated errors
+attach(ex3)
 ckacorrdoe(ex3$trt,ex3$rep,ex3$`sim 1`, 1)
 
 }

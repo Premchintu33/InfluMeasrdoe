@@ -25,7 +25,7 @@ To Identify Outliers in Multi - Response Experiments
 }
 \examples{
 data(ex2)
-To identify single outlier in multi - response experiments
+attach(ex2)
 ckmultdoe(ex2$trt,ex2$rep,ex2[,3:4],1)
 
 }

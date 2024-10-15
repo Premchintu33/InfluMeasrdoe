@@ -5,8 +5,7 @@
 #' @param resps data frame containing response variables
 #' @param noutli a  number indicating the number of outliers
 #'
-#' @importFrom("stats","IQR","acf","cov","lm","model.matrix","pchisq","sd","shapiro.test","var","xtabs")
-#' @importFrom("utils","combn")
+#' @import ExpDes, Matrix, pracma, tensr, stats, utils
 #'
 #' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
 #' Residuals of the of the model and Cook's distance for each treatment or a
@@ -14,7 +13,7 @@
 #'
 #' @examples
 #' data(ex2)
-#' To identify single outlier in multi - response experiments
+#' attach(ex2)
 #' ckmultdoe(ex2$trt,ex2$rep,ex2[,3:4],1)
 #'
 #' @export

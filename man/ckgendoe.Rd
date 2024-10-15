@@ -22,7 +22,7 @@ combination of treatments
 
  @examples
  data(ex1)
- To identify single outlier in block designs
+ attach(ex1)
  ckgendoe(ex1$trt,ex1$rep,ex1$yld,1)
 
  @export

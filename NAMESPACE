@@ -2,3 +2,9 @@
 
 export(ckacorrdoe)
 export(ckmultdoe)
+import("ExpDes,")
+import("Matrix,")
+import("pracma,")
+import("stats,")
+import("tensr,")
+import(utils)

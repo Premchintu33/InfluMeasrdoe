@@ -12,9 +12,11 @@ Imports:
     MASS,
     Matrix,
     pracma,
-    tensr
+    tensr,
+    stats,
+    utils
 URL: https://github.com/Premchintu33/InfluMeasrdoe
 BugReports: https://github.com/Premchintu33/InfluMeasrdoe/issues
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Depends: 
     R (>= 2.10)

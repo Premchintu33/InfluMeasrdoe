@@ -1,4 +1,25 @@
-ckacdoe <- function(trt,Rep,resp,noutli){
+#' To Identify Outliers in Design of Experiments with Autocorrelated Errors
+#'
+#' @param trt  Numeric or complex vector containing the treatment levels
+#' @param Rep  Numeric or complex vector containing the Replication
+#' @param resp Numeric or complex vector containing response variable
+#' @param noutli a  number indicating the number of outliers
+#'
+#' @importFrom("stats","IQR","acf","cov","lm","model.matrix","pchisq","sd","shapiro.test","var","xtabs")
+#' @importFrom("utils","combn")
+#'
+#' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
+#' Residuals of the of the model and Cook's distance for each treatment or a
+#' combination of treatments in Design of Experiments with auto-correlated errors
+#'
+#' @examples
+#' data(ex3)
+#' attach(ex3)
+#' ckacorrdoe(ex3$trt,ex3$rep,ex3$`sim 1`, 1)
+#'
+#' @export
+
+ckacorrdoe <- function(trt,Rep,resp,noutli){
   argmts <- lapply(as.list(match.call())[-1], eval)
   missing_vals <- sapply(argmts, function(x) any(is.na(x)))
   ## checking for any missing values
@@ -69,7 +90,7 @@ ckacdoe <- function(trt,Rep,resp,noutli){
   for (k in 1:nrow(acf_res)){
     for (i in 1:length(unique(trt))){
       for (j in 1:length(unique(trt))){
-        rho <- (1/(1-acf.res[k]^2))
+        rho <- (1/(1-acf_res[k]^2))
         if (i==j){
           omg[[k]][i,j]=1
         }

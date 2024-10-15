@@ -6,7 +6,7 @@
 #'
 #' @format A \code{tibble} with 3 column, which are:
 #' \describe{
-#' \item{Rep}{Numeric or complex vector of Replication}
+#' \item{rep}{Numeric or complex vector of Replication}
 #' \item{trt}{Numeric or complex vector of treatments}
 #' \item{yld}{Numeric vector of responses}
 #' }
@@ -16,5 +16,4 @@
 #' @examples
 #' data(ex1)
 "ex1"
-
 

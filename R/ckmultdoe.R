@@ -1,4 +1,25 @@
-ckmr <- function(trt,Rep,resps,noutli){
+#' To Identify Outliers in Multi - Response Experiments
+#'
+#' @param trt Numeric or complex vector containing the treatment levels
+#' @param Rep Numeric or complex vector containing the Replication
+#' @param resps data frame containing response variables
+#' @param noutli a  number indicating the number of outliers
+#'
+#' @importFrom("stats","IQR","acf","cov","lm","model.matrix","pchisq","sd","shapiro.test","var","xtabs")
+#' @importFrom("utils","combn")
+#'
+#' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
+#' Residuals of the of the model and Cook's distance for each treatment or a
+#' combination of treatments in Multi - Response Experiments
+#'
+#' @examples
+#' data(ex2)
+#' To identify single outlier in multi - response experiments
+#' ckmultdoe(ex2$trt,ex2$rep,ex2[,3:4],1)
+#'
+#' @export
+
+ckmultdoe <- function(trt,Rep,resps,noutli){
   argmts <- lapply(as.list(match.call())[-1], eval)
   missing_vals <- sapply(argmts, function(x) any(is.na(x)))
   ## labeling

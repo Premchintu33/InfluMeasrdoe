@@ -1,20 +1,22 @@
 Package: InfluMeasrdoe
 Type: Package
 Title: Identification of Influence Measures in Design of Experiments
+Date: 2020-10-28
 Version: 0.1.0
-Author: Gaddala Prem and Dr. Sankalpa Ojha
+Author: Gaddala Prem [aut,cre]
+        Dr. Sankalpa Ojha [aut]
 Maintainer: Gaddala Prem <premchintu33@yahoo.com>
 Description: This package is helpful in identification of outliers in design of experiments
-License: What license is it under?
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports: 
     MASS,
     Matrix,
     pracma,
-    tensr,
+    utils,
     stats,
-    utils
+    tensr
 URL: https://github.com/Premchintu33/InfluMeasrdoe
 BugReports: https://github.com/Premchintu33/InfluMeasrdoe/issues
 RoxygenNote: 7.3.2

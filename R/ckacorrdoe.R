@@ -5,7 +5,12 @@
 #' @param resp Numeric or complex vector containing response variable
 #' @param noutli a  number indicating the number of outliers
 #'
-#' @import ExpDes, Matrix, pracma, tensr, stats, utils
+#' @importFrom MASS ginv
+#' @importFrom Matrix bdiag
+#' @importFrom pracma inv pinv
+#' @importFrom utils combn
+#' @importFrom stats xtabs acf shapiro.test var cov lm pchisq sd IQR model.matrix
+#' @importFrom tensr mhalf
 #'
 #' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
 #' Residuals of the of the model and Cook's distance for each treatment or a

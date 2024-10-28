@@ -1,4 +1,4 @@
-#' To Identify Outliers in Design of Experiments with Autocorrelated Errors
+#' To Identify Outliers in Design of Experiments with Autocorrelated Errors under lag 1
 #'
 #' @param trt  Numeric or complex vector containing the treatment levels
 #' @param Rep  Numeric or complex vector containing the Replication
@@ -14,7 +14,7 @@
 #'
 #' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
 #' Residuals of the of the model and Cook's distance for each treatment or a
-#' combination of treatments in Design of Experiments with auto-correlated errors
+#' combination of treatments in Design of Experiments with auto-correlated errors under lag 1
 #'
 #' @examples
 #' data(ex3)
@@ -82,7 +82,7 @@ ckacorrdoe <- function(trt,Rep,resp,noutli){
   acf_res <- matrix(0, nrow = length(unique(Rep)), ncol = 1)
   for(j in 1:length(unique(Rep))){
     klm <-  xtabs(resp~trt+Rep)
-    kat=acf(klm[,j], lag = 1, pl=FALSE)
+    kat=acf(klm[,j], lag.max = NULL, plot = FALSE)
     acf_res[j] <- kat$acf[2]
   }
 

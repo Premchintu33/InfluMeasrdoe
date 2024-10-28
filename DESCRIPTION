@@ -6,7 +6,7 @@ Version: 0.1.0
 Author: Gaddala Prem [aut,cre]
         Dr. Sankalpa Ojha [aut]
 Maintainer: Gaddala Prem <premchintu33@yahoo.com>
-Description: This package is helpful in identification of outliers in design of experiments
+Description: This package is helpful in identification of outliers in design of experiments.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

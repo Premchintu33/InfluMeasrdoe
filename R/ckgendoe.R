@@ -85,36 +85,34 @@ ckgendoe <- function(trt,Rep,resp,noutli){
                                      (t(des_repr) %*% resp))
   bmat <- I_mat - des_repr %*% ginv(t(des_repr) %*% des_repr) %*% t(des_repr)
 
-  ## function for generating u matrix
+  ## function to generate u matrix
   generate_umatrix <- function(n, t) {
     # Initialize a list to store the matrices
     matrix_list <- list()
+
     if (t == 1) {
       # Special case when t = 1: simply iterate over each row
       for (i in 1:n) {
         U <- matrix(0, nrow = n, ncol = 1)
         U[i, 1] <- 1  # Place 1 in each row for the single column
-        ##storing to a matrix
+        # Store the matrix in the list
         matrix_list[[i]] <- U
       }
     } else {
-      # Generate all combinations where each column can take any row position (1:n)
-      row_combinations <- expand.grid(rep(list(1:n), t))
+      # Generate all combinations of row indices for columns without repetition
+      row_combinations <- combn(n, t, simplify = FALSE)
 
-      # Filter combinations to ensure the first (t-1) columns are in ascending order
-      row_combinations <- row_combinations[do.call(order, as.list(row_combinations)), ]
-
-      # Initialize a counter for combinations
+      # Initialize a counter for valid matrices
       counter <- 1
 
       # Loop through each valid combination
-      for (comb in 1:nrow(row_combinations)) {
+      for (comb in row_combinations) {
         # Initialize an empty matrix U with dimensions n x t
         U <- matrix(0, nrow = n, ncol = t)
 
         # Place 1's in the matrix for the current combination
         for (j in 1:t) {
-          U[row_combinations[comb, j], j] <- 1  # Place 1 in the selected row for each column
+          U[comb[j], j] <- 1  # Place 1 in the selected row for each column
         }
 
         # Store the matrix in the result list
@@ -122,6 +120,7 @@ ckgendoe <- function(trt,Rep,resp,noutli){
         counter <- counter + 1
       }
     }
+
     return(matrix_list)
   }
 
@@ -142,6 +141,30 @@ ckgendoe <- function(trt,Rep,resp,noutli){
     ckdis <- cknum/ckden
     ckd_mat[i,] <-  ckdis
   }
+  ## to add columns of treatment no.
+  extract_row_numbers <- function(matrix_list) {
+    # Initialize an empty matrix to store the row numbers
+    num_matrices <- length(matrix_list)
+    t <- ncol(matrix_list[[1]])
+    row_indices_matrix <- matrix(0, nrow = num_matrices, ncol = t)
+
+    # Loop through each matrix in the list
+    for (i in seq_along(matrix_list)) {
+      # Get the matrix
+      U <- matrix_list[[i]]
+
+      # Find the row indices of the `1`s in each column
+      row_indices <- apply(U, 2, function(col) which(col == 1))
+
+      # Store the row indices as a row in the output matrix
+      row_indices_matrix[i, ] <- row_indices
+    }
+
+    return(row_indices_matrix)
+  }
+
+  trt_no <- extract_row_numbers(U_mat)
+  colnames(trt_no) <- paste0("trt", seq_len(ncol(trt_no)))
 
   ## to mark values with threshold values
   ## function to mark
@@ -164,5 +187,6 @@ ckgendoe <- function(trt,Rep,resp,noutli){
   ckd_matt <- mark_values_with_asterisk(ckd_mat,trshld)
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
-  print(ckd_matt)
+  ckd_wtrt <- cbind(trt_no,ckd_matt)
+  print(ckd_wtrt)
 }

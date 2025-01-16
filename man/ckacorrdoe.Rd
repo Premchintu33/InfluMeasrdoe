@@ -2,7 +2,7 @@
 % Please edit documentation in R/ckacorrdoe.R
 \name{ckacorrdoe}
 \alias{ckacorrdoe}
-\title{To Identify Outliers in Design of Experiments with Autocorrelated Errors}
+\title{To Identify Outliers in Design of Experiments with Autocorrelated Errors under lag 1}
 \usage{
 ckacorrdoe(trt, Rep, resp, noutli)
 }
@@ -18,10 +18,10 @@ ckacorrdoe(trt, Rep, resp, noutli)
 \value{
 The output contains Shapiro-Wilk Normality test and Bartlett test for
 Residuals of the of the model and Cook's distance for each treatment or a
-combination of treatments in Design of Experiments with auto-correlated errors
+combination of treatments in Design of Experiments with auto-correlated errors under lag 1
 }
 \description{
-To Identify Outliers in Design of Experiments with Autocorrelated Errors
+To Identify Outliers in Design of Experiments with Autocorrelated Errors under lag 1
 }
 \examples{
 data(ex3)

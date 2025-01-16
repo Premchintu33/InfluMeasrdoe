@@ -268,6 +268,5 @@ ckmultacdoe <- function(trt,Rep,resps,noutli){
   print(ckdmac_df)
 }
 
-ckmultacdoe(ex3$trt,ex3$rep,ex3[,3:4],2)
 
 

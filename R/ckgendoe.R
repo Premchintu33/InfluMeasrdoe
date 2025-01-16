@@ -69,6 +69,7 @@ ckgendoe <- function(trt,Rep,resp,noutli){
   ## labeling
   n <- length(trt)
   I_mat <- diag(n)
+  r <- length(unique(Rep)) ## number of replications
   v <- length(unique(trt)) ## number of treatments
   j.vec <-  matrix(1, nrow = n, ncol = 1)
 
@@ -141,30 +142,40 @@ ckgendoe <- function(trt,Rep,resp,noutli){
     ckdis <- cknum/ckden
     ckd_mat[i,] <-  ckdis
   }
-  ## to add columns of treatment no.
-  extract_row_numbers <- function(matrix_list) {
-    # Initialize an empty matrix to store the row numbers
-    num_matrices <- length(matrix_list)
-    t <- ncol(matrix_list[[1]])
-    row_indices_matrix <- matrix(0, nrow = num_matrices, ncol = t)
+  # Function to explore all possible combinations of deletions
+  explore_combinations <- function(data, delete_count) {
+    # Get all non-NA indices
+    non_na_indices <- which(!is.na(data), arr.ind = TRUE)
 
-    # Loop through each matrix in the list
-    for (i in seq_along(matrix_list)) {
-      # Get the matrix
-      U <- matrix_list[[i]]
+    # Generate all combinations of the specified size
+    combinations <- combn(seq_len(nrow(non_na_indices)), delete_count)
 
-      # Find the row indices of the `1`s in each column
-      row_indices <- apply(U, 2, function(col) which(col == 1))
+    # Store the combinations explored
+    explored <- list()
 
-      # Store the row indices as a row in the output matrix
-      row_indices_matrix[i, ] <- row_indices
+    # Iterate through each combination
+    for (i in seq_len(ncol(combinations))) {
+      # Get the indices for this combination
+      combo_indices <- non_na_indices[combinations[, i], , drop = FALSE]
+
+      # Save this combination
+      explored[[i]] <- combo_indices
+    }
+    trt_combs <- data.frame(0,nrow = length(explored), ncol = 1)
+    for (i in seq_along(explored)) {
+      itrt_comb <-  data.frame(0,nrow =1 , ncol = delete_count)
+      for (j in seq_len(nrow(explored[[i]]))) {
+        itrt_comb[,j] <- paste0("(", explored[[i]][j, "row"], ", ", explored[[i]][j, "col"], ") ")
+      }
+      trt_combs[i,] <- itrt_comb
     }
 
-    return(row_indices_matrix)
+    return(trt_combs[,1:delete_count])
   }
+  ### data for trt comb
+  data_fmat <- xtabs(resp~trt+Rep)
 
-  trt_no <- extract_row_numbers(U_mat)
-  colnames(trt_no) <- paste0("trt", seq_len(ncol(trt_no)))
+  tr_comb <- explore_combinations(matrix(data_fmat, nrow = v,ncol = r), delete_count = noutli)
 
   ## to mark values with threshold values
   ## function to mark
@@ -185,8 +196,14 @@ ckgendoe <- function(trt,Rep,resp,noutli){
   fthd <- IQR(ckd_mat)
   trshld <- (7/2) * fthd
   ckd_matt <- mark_values_with_asterisk(ckd_mat,trshld)
+
+  tr_comb2 <- as.data.frame(tr_comb)
+  for (i in seq_along(tr_comb2)) {
+    colnames(tr_comb2)[i] <- paste("(trt_rep)", i, sep = "_")
+  }
+  ckd_df2 <- cbind.data.frame(tr_comb2,ckd_matt)
+
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
-  ckd_wtrt <- cbind(trt_no,ckd_matt)
-  print(ckd_wtrt)
+  print(ckd_df2)
 }

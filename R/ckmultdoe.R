@@ -32,6 +32,7 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
   p <- ncol(resps)
   I_mat <- diag(n)
   I_p <- diag(p)
+  r <- length(unique(Rep)) ## number of replications
   v <- length(unique(trt)) ## number of treatments
   j.vec <-  matrix(1, nrow = n, ncol = 1)
   varcovar <- cov(resps)
@@ -81,9 +82,29 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
     cat('\n------------------------------------------------------------------------\n\n')
   }
 
-  ## for P matrix
-  fl <-  diag(v) ## for creating p.str matrix
-  p_str <- fl[-c(1),]
+  ##generating P matrix
+  generate_contrast_matrix <- function(v) {
+    if (v < 2) {
+      stop("The number of treatments (v) must be at least 2.")
+    }
+
+    # Create an empty matrix for (v-1) x v
+    P <- matrix(0, nrow = v - 1, ncol = v)
+
+    # Fill the matrix using Helmert contrasts
+    for (i in 1:(v - 1)) {
+      P[i, 1:i] <- 1
+      P[i, i + 1] <- -i
+    }
+
+    # Normalize each row (optional)
+    P <- t(apply(P, 1, function(row) row / sqrt(sum(row^2))))
+
+    return(P)
+  }
+
+  ####
+  p_str <- generate_contrast_matrix(v)
   P <- (diag(p) %x% p_str)
 
   ##design matrices
@@ -93,7 +114,7 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
   des_rep1 <- cbind(one_vecr,des_repr)
   des_fulr <- cbind(one_vecr,des_trr,des_repr)
 
-  ## calculation of c and q matrices for multi responses
+  ## calculation of c and q matrices for single responses
   bmats <- (I_mat - des_rep1 %*% ginv(t(des_rep1)  %*% des_rep1)%*%
               t(des_rep1))
   cmat <- t(des_trr) %*% bmats %*% des_trr
@@ -103,32 +124,30 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
   generate_umatrix <- function(n, t) {
     # Initialize a list to store the matrices
     matrix_list <- list()
+
     if (t == 1) {
       # Special case when t = 1: simply iterate over each row
       for (i in 1:n) {
         U <- matrix(0, nrow = n, ncol = 1)
         U[i, 1] <- 1  # Place 1 in each row for the single column
-        ##storing to a matrix
+        # Store the matrix in the list
         matrix_list[[i]] <- U
       }
     } else {
-      # Generate all combinations where each column can take any row position (1:n)
-      row_combinations <- expand.grid(rep(list(1:n), t))
+      # Generate all combinations of row indices for columns without repetition
+      row_combinations <- combn(n, t, simplify = FALSE)
 
-      # Filter combinations to ensure the first (t-1) columns are in ascending order
-      row_combinations <- row_combinations[do.call(order, as.list(row_combinations)), ]
-
-      # Initialize a counter for combinations
+      # Initialize a counter for valid matrices
       counter <- 1
 
       # Loop through each valid combination
-      for (comb in 1:nrow(row_combinations)) {
+      for (comb in row_combinations) {
         # Initialize an empty matrix U with dimensions n x t
         U <- matrix(0, nrow = n, ncol = t)
 
         # Place 1's in the matrix for the current combination
         for (j in 1:t) {
-          U[row_combinations[comb, j], j] <- 1  # Place 1 in the selected row for each column
+          U[comb[j], j] <- 1  # Place 1 in the selected row for each column
         }
 
         # Store the matrix in the result list
@@ -136,6 +155,7 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
         counter <- counter + 1
       }
     }
+
     return(matrix_list)
   }
 
@@ -147,15 +167,15 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
   V_mats <- bmats - S_mats
   W_lis <- list()
 
-  for (outl in 1:n){
+  for (outl in 1:length(U_mats)){
     W_str <- (p_str %*% pinv(cmat) %*% t(des_trr) %*% bmats %*% U_mats[[outl]] %*%
                 ginv(t(U_mats[[outl]]) %*% V_mats %*% U_mats[[outl]]) %*% t(U_mats[[outl]]) %*% V_mats)
     W_lis[[outl]] <- W_str
   }
 
-  ckdm_mat <- matrix(0, nrow = (2*n), ncol = 1)
+  ckdm_mat <- matrix(0, nrow = length(U_mats), ncol = 1)
   resps <- as.matrix(resps)
-  for(outli in 1:(2*n)){
+  for(outli in 1:length(U_mats)){
     index <- ifelse(outli <= n, outli, (outli - 1) %% n + 1)
     ## cook distance
     nume <- t(as.vector(resps)) %*% (inv(varcovar) %x% (t(W_lis[[index]]) %*% (p_str %*% cmat %*% t(p_str)) %*%
@@ -165,6 +185,42 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
     mckd <- nume/denom
     ckdm_mat[outli,] <-  mckd
   }
+
+  # Function to explore all possible combinations of deletions
+  explore_combinations <- function(data, delete_count) {
+    # Get all non-NA indices
+    non_na_indices <- which(!is.na(data), arr.ind = TRUE)
+
+    # Generate all combinations of the specified size
+    combinations <- combn(seq_len(nrow(non_na_indices)), delete_count)
+
+    # Store the combinations explored
+    explored <- list()
+
+    # Iterate through each combination
+    for (i in seq_len(ncol(combinations))) {
+      # Get the indices for this combination
+      combo_indices <- non_na_indices[combinations[, i], , drop = FALSE]
+
+      # Save this combination
+      explored[[i]] <- combo_indices
+    }
+    trt_combs <- data.frame(0,nrow = length(explored), ncol = 1)
+    for (i in seq_along(explored)) {
+      itrt_comb <-  data.frame(0,nrow =1 , ncol = delete_count)
+      for (j in seq_len(nrow(explored[[i]]))) {
+        itrt_comb[,j] <- paste0("(", explored[[i]][j, "row"], ", ", explored[[i]][j, "col"], ") ")
+      }
+      trt_combs[i,] <- itrt_comb
+    }
+
+    return(trt_combs[,1:delete_count])
+  }
+  ### data for trt comb
+  datam_fmat <- xtabs(resps[,1]~trt+Rep)
+
+  tr_mcomb <- explore_combinations(matrix(datam_fmat, nrow = v,ncol = r), delete_count = noutli)
+
   ## to mark values with threshold values
   ## function to mark
   mark_values_with_asterisk <- function(mat, threshold) {
@@ -184,7 +240,14 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
   fthdm <- IQR(ckdm_mat)
   trshldm <- (7/2) * fthdm
   ckdm_matt <- mark_values_with_asterisk(ckdm_mat,trshldm)
+
+  tr_mcomb2 <- as.data.frame(tr_mcomb)
+  for (i in seq_along(tr_mcomb2)) {
+    colnames(tr_mcomb2)[i] <- paste("(trt_rep)", i, sep = "_")
+  }
+  ckdm_df2 <- cbind.data.frame(tr_mcomb2,ckdm_matt)
+
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
-  print(ckdm_matt)
+  print(ckdm_df2)
 }

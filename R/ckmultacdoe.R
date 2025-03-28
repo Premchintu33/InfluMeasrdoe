@@ -5,20 +5,16 @@
 #' @param resps data frame containing response variables
 #' @param noutli a  number indicating the number of outliers
 #'
-#' @importFrom MASS ginv
-#' @importFrom Matrix bdiag
-#' @importFrom pracma inv pinv
-#' @importFrom utils combn
-#' @importFrom stats xtabs acf shapiro.test var cov lm pchisq sd IQR model.matrix
-#' @importFrom tensr mhalf
+#' @importFrom stats xtabs acf shapiro.test var cov lm pchisq sd IQR model.matrix residuals
 #'
-#' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
+#'
+#' @return The output contains Multivariate Normality test and BoxM test for
 #' Residuals of the of the model and Cook's distance for each treatment or a
 #' combination of treatments in Multi - Response Experiments with Auto-Correlated Errors (1)
 #'
 #' @examples
+#' # example code
 #' data(ex2)
-#' attach(ex2)
 #' ckmultacdoe(ex3$trt,ex3$rep,ex3[,3:4],2)
 #'
 #' @export
@@ -42,46 +38,40 @@ ckmultacdoe <- function(trt,Rep,resps,noutli){
   if(any(missing_vals)){
     warning("One or more arguments contain missing values.")
   }
-  ## bartlett code
-  bartlett <-function(trt, resp, t, r){
-    vari<-tapply(resp,trt,var)
-    S2p<-sum((r-1)*vari)/(length(resp)-t)
-    A<-(length(resp)-t)*log(S2p)-sum((r-1)*log(vari))
-    B<-(1/(3*(t-1)))*(sum(1/(r-1))-(1/(length(resp)-t)))
-    Xc1<-A/(1+B)
-    pvalue<-1-pchisq(Xc1, t-1)
-    output <- pvalue
-    return(output)
-  }
-  ## checking for normality and homogeneity of variances
+
+  ## model to extract residuals
   trt<-as.factor(trt)
   Rep<-factor(Rep)
-  n_result <- matrix(0, nrow = ncol(resps), ncol = 1)
-  counter <- 1
-  for (resp in 1:ncol(resps)){
-    model<-lm(as.matrix(resps[,resp])~Rep+trt)
-    n_test<-shapiro.test(model$residuals)
-    n_result[resp,] <-n_test$p.value
-    cat('------------------------------------------------------------------------\n')
-    if (n_result[resp,] > 0.05){
-      cat('Normality Assumption of response' , resp, ': \n')
-      print("At 5% of significance, Normality Assumption is not violated")
-    } else {
-      cat('Normality Assumption of response' , resp, ': \n')
-      print("At 5% of significance, Normality Assumption is  violated")
-    }
-    cat('\n------------------------------------------------------------------------\n\n')
-    cat('------------------------------------------------------------------------\n')
-    bartmout <- bartlett(trt,resps[,resp],length(unique(trt)),length(unique(Rep)))
-    if (bartmout > 0.05){
-      cat('Homogenity of variances of response', resp, ': \n')
-      print("At 5% of significance, residuals can  be considered homocedastic!")
-    } else {
-      cat('Homogenity of variances of response', resp, ': \n')
-      print("At 5% of significance, residuals can not be considered homocedastic!")
-    }
-    cat('\n------------------------------------------------------------------------\n\n')
+  model_fres <- lm(resps ~ trt+Rep)
+  resi <- residuals(model_fres) ## for extracting residuals
+
+  mvnres <- MVN::mvn(resi)## multivariate normality test
+
+  cat('------------------------------------------------------------------------\n')
+  if (mvnres$multivariateNormality[,3]> 0.05){
+    cat('Normality Assumption of response: \n')
+    print("At 5% of significance, Normality Assumption is not violated")
+    print(mvnres$multivariateNormality)
+  } else {
+    cat('Normality Assumption \n'):
+    print("At 5% of significance, Normality Assumption is  violated")
+    print(mvnres$multivariateNormality)
   }
+  cat('\n------------------------------------------------------------------------\n\n')
+  cat('------------------------------------------------------------------------\n')
+
+  boxres <- heplots::boxM(resi, trt) ## multivariate homogenity of var covar test
+
+  if (boxres$p.value > 0.05){
+    cat('Homogenity of variances of response: \n')
+    print("At 5% of significance, residuals can  be considered homocedastic!")
+    print(boxres)
+  } else {
+    cat('Homogenity of variances of response: \n')
+    print("At 5% of significance, residuals can not be considered homocedastic!")
+    print(boxres)
+  }
+  cat('\n------------------------------------------------------------------------\n\n')
 
   ##generating P matrix
   generate_contrast_matrix <- function(v) {
@@ -153,62 +143,23 @@ ckmultacdoe <- function(trt,Rep,resps,noutli){
   }
 
   ## diagonally combining all the omg matrices
-  omg_mfl <- as.matrix(bdiag(omg_m))
+  omg_mfl <- as.matrix(Matrix::bdiag(omg_m))
   OMG <- varcovar %x% omg_mfl
 
 
   ## calculation of c and q matrices for  responses
-  bmat <- (I_np - des_mrep1 %*% ginv(t(des_mrep1)  %*% des_mrep1)%*%
+  bmat <- (I_np - des_mrep1 %*% MASS::ginv(t(des_mrep1)  %*% des_mrep1)%*%
               t(des_mrep1))
   cmat <- t(des_mtrr) %*% bmat %*% des_mtrr
   qmat <- t(des_mtrr) %*% bmat %*% as.vector(resps)
 
-  ## function for generating u matrix
-  generate_outvec <- function(n, num_outliers) {
-    vect_list <- list()
-    # Get all possible combinations of positions for the given number of outliers
-    outlier_combinations <- combn(1:n, num_outliers)
-
-    # Loop through each combination of outlier positions
-    for (i in 1:ncol(outlier_combinations)) {
-      # Initialize a vector of zeros
-      U <- rep(0, n)
-
-      # Get the current combination of outlier positions
-      outliers <- outlier_combinations[, i]
-
-      # Set the corresponding positions in U to 1
-      U[outliers] <- 1
-      vect_list[[i]] <- U
-    }
-    return(vect_list)
-  }
-  ## generating U matrix for multi responses
-  U_mats <- generate_outvec(n,noutli)
-
-  ##  for cook distance
-  ckdm_mat <- matrix(0, nrow = length(U_mats), ncol = 1)
-
-  for (outl in 1:length(U_mats)){
-    u_vec <- matrix(1, nrow = p, ncol = 1) %x% U_mats[[outl]]
-    W_mat <- bmat - bmat %*% mhalf(inv(OMG)) %*% des_mtrr %*% pinv(cmat) %*% t(des_mtrr) %*% mhalf(inv(OMG)) %*% bmat
-    uwu <- t(u_vec) %*% mhalf(inv(OMG)) %*% W_mat %*% mhalf(inv(OMG)) %*% u_vec
-    p_thdiff <- (P %*% pinv(cmat) %*% t(des_mtrr) %*% mhalf(inv(OMG)) %*% bmat %*% mhalf(inv(OMG)) %*% u_vec %*% ginv(uwu) %*%
-                 t(u_vec) %*% mhalf(inv(OMG)) %*% W_mat %*% mhalf(inv(OMG)) %*% as.vector(resps))
-    pcp <- P %*% cmat %*% t(P)
-    numr <- t(p_thdiff) %*% inv(pcp) %*% p_thdiff
-    denom <- (p*(v-1))
-    mckd <- numr/denom
-    ckdm_mat[outl,] <-  mckd
-  }
-
-  # Function to explore all possible combinations of deletions
+  ## function for generating trt comb and u_mat
   explore_combinations <- function(data, delete_count) {
     # Get all non-NA indices
     non_na_indices <- which(!is.na(data), arr.ind = TRUE)
 
     # Generate all combinations of the specified size
-    combinations <- combn(seq_len(nrow(non_na_indices)), delete_count)
+    combinations <- utils::combn(seq_len(nrow(non_na_indices)), delete_count)
 
     # Store the combinations explored
     explored <- list()
@@ -230,12 +181,49 @@ ckmultacdoe <- function(trt,Rep,resps,noutli){
       trt_combs[i,] <- itrt_comb
     }
 
-    return(trt_combs[,1:delete_count])
+    # Create matrices marking combinations as 1
+    marked_matrices <- list()
+
+    for (i in seq_along(explored)) {
+      marked_matrix <- matrix(0, nrow = nrow(data), ncol = ncol(data))
+      for (j in seq_len(nrow(explored[[i]]))) {
+        marked_matrix[explored[[i]][j, "row"], explored[[i]][j, "col"]] <- 1
+      }
+      marked_matrices[[i]] <- marked_matrix
+    }
+
+    return(list(trt_combs = trt_combs[,1:delete_count], marked_matrices = marked_matrices))
   }
-  ### data for trt comb
+
+  ## exp comb output
   datam_fmat <- xtabs(resps[,1]~trt+Rep)
 
-  trmac_comb <- explore_combinations(matrix(datam_fmat, nrow = v,ncol = r), delete_count = noutli)
+  exp_output <- explore_combinations(matrix(datam_fmat, nrow = v,ncol = r), delete_count = noutli)
+  trmac_comb <- exp_output$trt_combs
+  mark_acmats <- exp_output$marked_matrices
+
+  ## loop for obtaining u mat
+  U_mats <- list()
+  for(i in seq_along(exp_output$marked_matrices)){
+    u_vec <- as.vector(mark_acmats[[i]])
+    U_mats[[i]] <- u_vec
+  }
+
+  ##  for cook distance
+  ckdm_mat <- matrix(0, nrow = length(U_mats), ncol = 1)
+
+  for (outl in 1:length(U_mats)){
+    u_vec <- matrix(1, nrow = p, ncol = 1) %x% U_mats[[outl]]
+    W_mat <- bmat - bmat %*% tensr::mhalf(pracma::inv(OMG)) %*% des_mtrr %*% pracma::pinv(cmat) %*% t(des_mtrr) %*% tensr::mhalf(pracma::inv(OMG)) %*% bmat
+    uwu <- t(u_vec) %*% tensr::mhalf(pracma::inv(OMG)) %*% W_mat %*% tensr::mhalf(pracma::inv(OMG)) %*% u_vec
+    p_thdiff <- (P %*% pracma::pinv(cmat) %*% t(des_mtrr) %*% tensr::mhalf(pracma::inv(OMG)) %*% bmat %*% tensr::mhalf(pracma::inv(OMG)) %*% u_vec %*% MASS::ginv(uwu) %*%
+                 t(u_vec) %*% tensr::mhalf(pracma::inv(OMG)) %*% W_mat %*% tensr::mhalf(pracma::inv(OMG)) %*% as.vector(resps))
+    pcp <- P %*% cmat %*% t(P)
+    numr <- t(p_thdiff) %*% pracma::inv(pcp) %*% p_thdiff
+    denom <- (p*(v-1))
+    mckd <- numr/denom
+    ckdm_mat[outl,] <-  mckd
+  }
 
   ## to mark values with threshold values
   ## function to mark

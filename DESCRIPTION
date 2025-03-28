@@ -10,12 +10,13 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports: 
-    MASS,
-    Matrix,
-    pracma,
-    utils,
     stats,
-    tensr,
+    MASS,
+    MVN,
+    Matrix,
+    heplots,
+    pracma,
+    tensr
 URL: https://github.com/Premchintu33/InfluMeasrdoe
 BugReports: https://github.com/Premchintu33/InfluMeasrdoe/issues
 RoxygenNote: 7.3.2

@@ -19,14 +19,12 @@ ckgendoe(trt, Rep, resp, noutli)
 The output contains Shapiro-Wilk Normality test and Bartlett test for
 Residuals of the of the model and Cook's distance for each treatment or a
 combination of treatments
-
- @examples
- data(ex1)
- attach(ex1)
- ckgendoe(ex1$trt,ex1$rep,ex1$yld,1)
-
- @export
 }
 \description{
 To Identify Outliers in Design of Experiments
+}
+\examples{
+# example code
+data(ex1)
+ckgendoe(ex1$trt,exq$rep,exq$yld,1)
 }

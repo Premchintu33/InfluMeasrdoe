@@ -5,12 +5,7 @@
 #' @param resp Numeric or complex vector containing response variable
 #' @param noutli a  number indicating the number of outliers
 #'
-#' @importFrom MASS ginv
-#' @importFrom Matrix bdiag
-#' @importFrom pracma inv pinv
-#' @importFrom utils combn
 #' @importFrom stats xtabs acf shapiro.test var cov lm pchisq sd IQR model.matrix
-#' @importFrom tensr mhalf
 #'
 #' @return The output contains Shapiro-Wilk Normality test and Bartlett test for
 #' Residuals of the of the model and Cook's distance for each treatment or a
@@ -135,64 +130,27 @@ ckacorrdoe <- function(trt,Rep,resp,noutli){
   }
 
   ## diagonally combining all the omg matrices
-  omg_fl <- as.matrix(bdiag(omg))
+  omg_fl <- as.matrix(Matrix::bdiag(omg))
 
   ## calculation of c and q matrices
-  bmat_ac <- inv(omg_fl) - inv(omg_fl) %*% des_repr %*% ginv(t(des_repr) %*% inv(omg_fl) %*% des_repr) %*% t(des_repr) %*% inv(omg_fl)
+  bmat_ac <- pracma::inv(omg_fl) - pracma::inv(omg_fl) %*% des_repr %*% MASS::ginv(t(des_repr) %*% pracma::inv(omg_fl) %*% des_repr) %*% t(des_repr) %*% pracma::inv(omg_fl)
 
   cmat_ac <- t(des_trr) %*% bmat_ac %*% des_trr
   qmat_ac <- t(des_trr) %*% bmat_ac %*% resp
 
   ## requirements for cook distance
-  Vmat_ac <- omg_fl %*% (bmat_ac - bmat_ac %*% des_trr %*% ginv(cmat_ac) %*% t(des_trr) %*% bmat_ac)
-  Hstr <- inv(omg_fl) %*% Vmat_ac
+  Vmat_ac <- omg_fl %*% (bmat_ac - bmat_ac %*% des_trr %*% MASS::ginv(cmat_ac) %*% t(des_trr) %*% bmat_ac)
+  Hstr <- pracma::inv(omg_fl) %*% Vmat_ac
 
   ## for cook distance
 
-  # Function to generate all possible outlier vectors with specified number of outliers
-  generate_outvec <- function(n, num_outliers) {
-    vect_list <- list()
-    # Get all possible combinations of positions for the given number of outliers
-    outlier_combinations <- combn(1:n, num_outliers)
-
-    # Loop through each combination of outlier positions
-    for (i in 1:ncol(outlier_combinations)) {
-      # Initialize a vector of zeros
-      U <- rep(0, n)
-
-      # Get the current combination of outlier positions
-      outliers <- outlier_combinations[, i]
-
-      # Set the corresponding positions in U to 1
-      U[outliers] <- 1
-      vect_list[[i]] <- U
-    }
-    return(vect_list)
-  }
-
-  u_lis <- generate_outvec(n,noutli)
-
-  ckd_acmat <- matrix(0,nrow =length(u_lis), ncol = 1)
-
-  ## loop for cook's distance
-  for(outl in 1:length(u_lis)){
-    uVu_ac <- t(as.vector(u_lis[[outl]])) %*% inv(omg_fl) %*% Vmat_ac %*% as.vector(u_lis[[outl]])
-    P_thdiff <- (P %*% pinv(cmat_ac) %*% t(des_trr) %*% bmat_ac %*% as.vector(u_lis[[outl]]) %*% inv(uVu_ac) %*%
-                   t(as.vector(u_lis[[outl]])) %*% inv(omg_fl) %*% Vmat_ac %*% resp)
-    pcp_ac <- P %*% cmat_ac %*% t(P)
-    ckd_ac_num <- t(P_thdiff) %*% pcp_ac %*% P_thdiff
-    ckd_ac_deno <- var(resp) * (v-1)
-    ckd_ac <- ckd_ac_num/ckd_ac_deno
-    ckd_acmat[outl,] <- ckd_ac
-  }
-
-  # Function to explore all possible combinations of deletions
+  ## function for generating trt comb and u_mat
   explore_combinations <- function(data, delete_count) {
     # Get all non-NA indices
     non_na_indices <- which(!is.na(data), arr.ind = TRUE)
 
     # Generate all combinations of the specified size
-    combinations <- combn(seq_len(nrow(non_na_indices)), delete_count)
+    combinations <- utils::combn(seq_len(nrow(non_na_indices)), delete_count)
 
     # Store the combinations explored
     explored <- list()
@@ -205,21 +163,54 @@ ckacorrdoe <- function(trt,Rep,resp,noutli){
       # Save this combination
       explored[[i]] <- combo_indices
     }
-    trt_combs <- data.frame(0,nrow = length(explored), ncol = 1)
+    trt_combs <- data.frame(matrix(nrow = length(explored), ncol = delete_count))
     for (i in seq_along(explored)) {
-      itrt_comb <-  data.frame(0,nrow =1 , ncol = delete_count)
       for (j in seq_len(nrow(explored[[i]]))) {
-        itrt_comb[,j] <- paste0("(", explored[[i]][j, "row"], ", ", explored[[i]][j, "col"], ") ")
+        trt_combs[i, j] <- paste0("(", explored[[i]][j, "row"], ", ", explored[[i]][j, "col"], ")")
       }
-      trt_combs[i,] <- itrt_comb
     }
 
-    return(trt_combs[,1:delete_count])
-  }
-  ### data for trt comb
-  data_fmatac <- xtabs(resp~trt+Rep)
+    # Create matrices marking combinations as 1
+    marked_matrices <- list()
 
-  tr_combac <- explore_combinations(matrix(data_fmatac, nrow = v,ncol = r), delete_count = noutli)
+    for (i in seq_along(explored)) {
+      marked_matrix <- matrix(0, nrow = nrow(data), ncol = ncol(data))
+      for (j in seq_len(nrow(explored[[i]]))) {
+        marked_matrix[explored[[i]][j, "row"], explored[[i]][j, "col"]] <- 1
+      }
+      marked_matrices[[i]] <- marked_matrix
+    }
+
+    return(list(trt_combs = trt_combs, marked_matrices = marked_matrices))
+  }
+
+  ## exp combinations output
+  datac_mat <- xtabs(resp~trt+Rep)
+
+  expac_output <- explore_combinations(matrix(datac_mat, nrow = v,ncol = r), delete_count = noutli)
+  tr_combac <- expac_output$trt_combs
+  markac_mat <- expac_output$marked_matrices
+
+  ## generating u matrix
+  u_lis <- list()
+  for(i in seq_along(expac_output$marked_matrices)){
+    u_vec <- as.vector(markac_mat[[i]])
+    u_lis[[i]] <- u_vec
+  }
+
+  ckd_acmat <- matrix(0,nrow =length(u_lis), ncol = 1)
+
+  ## loop for cook's distance
+  for(outl in 1:length(u_lis)){
+    uVu_ac <- t(as.vector(u_lis[[outl]])) %*% pracma::inv(omg_fl) %*% Vmat_ac %*% as.vector(u_lis[[outl]])
+    P_thdiff <- (P %*% pracma::pinv(cmat_ac) %*% t(des_trr) %*% bmat_ac %*% as.vector(u_lis[[outl]]) %*% pracma::inv(uVu_ac) %*%
+                   t(as.vector(u_lis[[outl]])) %*% pracma::inv(omg_fl) %*% Vmat_ac %*% resp)
+    pcp_ac <- P %*% cmat_ac %*% t(P)
+    ckd_ac_num <- t(P_thdiff) %*% pcp_ac %*% P_thdiff
+    ckd_ac_deno <- var(resp) * (v-1)
+    ckd_ac <- ckd_ac_num/ckd_ac_deno
+    ckd_acmat[outl,] <- ckd_ac
+  }
 
   ## to mark values with threshold values
   ## function to mark

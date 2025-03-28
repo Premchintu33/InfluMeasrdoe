@@ -16,7 +16,7 @@ ckmultacdoe(trt, Rep, resps, noutli)
 \item{noutli}{a  number indicating the number of outliers}
 }
 \value{
-The output contains Shapiro-Wilk Normality test and Bartlett test for
+The output contains Multivariate Normality test and BoxM test for
 Residuals of the of the model and Cook's distance for each treatment or a
 combination of treatments in Multi - Response Experiments with Auto-Correlated Errors (1)
 }

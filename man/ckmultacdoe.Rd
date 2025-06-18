@@ -24,8 +24,8 @@ combination of treatments in Multi - Response Experiments with Auto-Correlated E
 To identify Outliers in Multi-Response Experiments with Auto-Correlated Errors(1)
 }
 \examples{
+# example code
 data(ex2)
-attach(ex2)
 ckmultacdoe(ex3$trt,ex3$rep,ex3[,3:4],2)
 
 }

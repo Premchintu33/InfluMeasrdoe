@@ -26,5 +26,5 @@ To Identify Outliers in Design of Experiments
 \examples{
 # example code
 data(ex1)
-ckgendoe(ex1$trt,exq$rep,exq$yld,1)
+ckgendoe(ex1$trt,ex1$rep,ex1$yld,1)
 }

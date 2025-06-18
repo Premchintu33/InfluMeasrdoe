@@ -16,7 +16,7 @@
 #' @examples
 #' # example code
 #' data(ex1)
-#' ckgendoe(ex1$trt,exq$rep,exq$yld,1)
+#' ckgendoe(ex1$trt,ex1$rep,ex1$yld,1)
 
 
 ckgendoe <- function(trt,Rep,resp,noutli){
@@ -164,7 +164,7 @@ ckgendoe <- function(trt,Rep,resp,noutli){
     cknum <- t(hdel) %*% t(U_mat[[i]]) %*% S_mat %*% U_mat[[i]] %*% hdel
     ckden <- (v-1) * var(resp)
     ckdis <- cknum/ckden
-    ckd_mat[i,] <-  ckdis
+    ckd_mat[i,] <-  round(ckdis,4)
   }
   ## to mark values with threshold values
   ## function to mark
@@ -195,4 +195,8 @@ ckgendoe <- function(trt,Rep,resp,noutli){
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
   print(ckd_df2)
+  cat('\n------------------------------------------------------------------------\n\n')
+  cat('------------------------------------------------------------------------
+      \nTreatments Suspected as Outliers : \n')
+  print(ckd_df2[ckd_df2[[noutli+2]]== "*",])
 }

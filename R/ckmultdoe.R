@@ -203,7 +203,7 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
     denom <- (p*(v-1))
 
     mckd <- nume/denom
-    ckdm_mat[outli,] <-  mckd
+    ckdm_mat[outli,] <-  round(mckd,2)
   }
 
   ## to mark values with threshold values
@@ -235,4 +235,8 @@ ckmultdoe <- function(trt,Rep,resps,noutli){
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
   print(ckdm_df2)
+  cat('\n------------------------------------------------------------------------\n\n')
+  cat('------------------------------------------------------------------------
+      \nTreatments Suspected as Outliers : \n')
+  print(ckdm_df2[ckdm_df2[[noutli+2]]== "*",])
 }

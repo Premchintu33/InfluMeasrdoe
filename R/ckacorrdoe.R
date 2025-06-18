@@ -209,7 +209,7 @@ ckacorrdoe <- function(trt,Rep,resp,noutli){
     ckd_ac_num <- t(P_thdiff) %*% pcp_ac %*% P_thdiff
     ckd_ac_deno <- var(resp) * (v-1)
     ckd_ac <- ckd_ac_num/ckd_ac_deno
-    ckd_acmat[outl,] <- ckd_ac
+    ckd_acmat[outl,] <- round(ckd_ac,4)
   }
 
   ## to mark values with threshold values
@@ -241,4 +241,8 @@ ckacorrdoe <- function(trt,Rep,resp,noutli){
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
   print(ckd_acdf2)
+  cat('\n------------------------------------------------------------------------\n\n')
+  cat('------------------------------------------------------------------------
+      \nTreatments Suspected as Outliers : \n')
+  print(ckd_acdf2[ckd_acdf2[[noutli+2]]== "*",])
 }

@@ -222,7 +222,7 @@ ckmultacdoe <- function(trt,Rep,resps,noutli){
     numr <- t(p_thdiff) %*% pracma::inv(pcp) %*% p_thdiff
     denom <- (p*(v-1))
     mckd <- numr/denom
-    ckdm_mat[outl,] <-  mckd
+    ckdm_mat[outl,] <-  round(mckd,4)
   }
 
   ## to mark values with threshold values
@@ -254,7 +254,11 @@ ckmultacdoe <- function(trt,Rep,resps,noutli){
   cat('------------------------------------------------------------------------
       \nCook s Distance : \n')
   print(ckdmac_df)
+  cat('\n------------------------------------------------------------------------\n\n')
+  cat('------------------------------------------------------------------------
+      \nTreatments Suspected as Outliers : \n')
+  print(ckdmac_df[ckdmac_df[[noutli+2]]== "*",])
 }
 
-
+ckmultacdoe(ex3$trt,ex3$rep,ex3[,3:4],2)
 
